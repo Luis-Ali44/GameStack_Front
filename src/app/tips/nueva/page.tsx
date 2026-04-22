@@ -15,6 +15,23 @@ export default function NuevoTipPage() {
   const [error, setError]     = useState('');
   const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
+  const saveToLocalStorage = (id: number | string) => {
+    try {
+      const saved   = localStorage.getItem('gamecenter_my_tips');
+      const existing = saved ? JSON.parse(saved) : [];
+      const newTip  = {
+        id,
+        game_id: parseInt(form.game_id),
+        title: form.title,
+        content: form.content,
+        category: form.category || undefined,
+        likes_count: 0,
+        created_at: new Date().toISOString(),
+      };
+      localStorage.setItem('gamecenter_my_tips', JSON.stringify([...existing, newTip]));
+    } catch { /* ignore */ }
+  };
+
   const handleSubmit = async () => {
     if (!form.game_id || !form.title || !form.content) { setError('Juego, título y contenido son obligatorios'); return; }
     setLoading(true); setError('');
@@ -25,20 +42,10 @@ export default function NuevoTipPage() {
         build: form.isBuild && form.champion ? { champion: form.champion, role: form.role, items: {}, runes: {} } : undefined,
       });
 
-      // Guardar en localStorage
-      const saved = localStorage.getItem('gamecenter_my_tips');
-      const existing = saved ? JSON.parse(saved) : [];
-      const newTip = {
-        id: res.tip.id,
-        game_id: parseInt(form.game_id),
-        title: form.title,
-        content: form.content,
-        category: form.category || undefined,
-        likes_count: 0,
-        created_at: new Date().toISOString(),
-      };
-      localStorage.setItem('gamecenter_my_tips', JSON.stringify([...existing, newTip]));
-
+      // Intentar obtener el ID del backend, si no usar timestamp como fallback
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const id = res?.tip?.id ?? (res as any)?.id ?? Date.now();
+      saveToLocalStorage(id);
       router.push('/tips');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al publicar');
@@ -81,7 +88,7 @@ export default function NuevoTipPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '16px', backgroundColor: '#161B2E', borderRadius: '8px', border: '1px solid #1E2540' }}>
               <div><label style={lbl}>Campeón * (en inglés)</label><input value={form.champion} onChange={(e) => set('champion', e.target.value)} placeholder="Ej: Jinx" style={inp} /></div>
               <div><label style={lbl}>Rol</label><input value={form.role} onChange={(e) => set('role', e.target.value)} placeholder="Ej: ADC" style={inp} /></div>
-              <p style={{ gridColumn: '1/-1', fontSize: '11px', color: '#FCD34D' }}>⚠️ El nombre debe ser exactamente como aparece en el juego (ej: "Jinx", "LeBlanc")</p>
+              <p style={{ gridColumn: '1/-1', fontSize: '11px', color: '#FCD34D' }}>⚠️ El nombre debe ser exactamente como aparece en el juego</p>
             </div>
           )}
 
