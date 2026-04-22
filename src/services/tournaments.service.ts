@@ -1,6 +1,11 @@
 import { api } from '@/lib/api';
 import { CreateTournamentPayload, Tournament } from '@/types/tournament.types';
 
+interface TournamentsResponse {
+  message: string;
+  tournaments: Tournament[];
+}
+
 interface CreateTournamentResponse {
   message: string;
   tournament: Tournament;
@@ -16,6 +21,12 @@ interface BracketResponse {
 }
 
 export const tournamentsService = {
+  getAll: (): Promise<TournamentsResponse> =>
+    api.get<TournamentsResponse>('/api/v1/tournaments'),
+
+  getMy: (): Promise<TournamentsResponse> =>
+    api.get<TournamentsResponse>('/api/v1/tournaments/my', true),
+
   create: (payload: CreateTournamentPayload): Promise<CreateTournamentResponse> =>
     api.post<CreateTournamentResponse>('/api/v1/tournaments', payload, true),
 

@@ -24,32 +24,15 @@ export default function NuevoTipPage() {
     if (saved) { try { setGames(JSON.parse(saved)); } catch { /* ignore */ } }
   }, []);
 
-  const saveToLocalStorage = (id: number | string) => {
-    try {
-      const saved    = localStorage.getItem('gamecenter_my_tips');
-      const existing = saved ? JSON.parse(saved) : [];
-      const selectedGame = games.find((g) => g.id === parseInt(form.game_id));
-      localStorage.setItem('gamecenter_my_tips', JSON.stringify([...existing, {
-        id, game_id: parseInt(form.game_id), game_name: selectedGame?.name || '',
-        title: form.title, content: form.content,
-        category: form.category || undefined, likes_count: 0,
-        created_at: new Date().toISOString(),
-      }]));
-    } catch { /* ignore */ }
-  };
-
   const handleSubmit = async () => {
     if (!form.game_id || !form.title || !form.content) { setError('Selecciona un juego, título y contenido son obligatorios'); return; }
     setLoading(true); setError('');
     try {
-      const res = await tipsService.create({
+      await tipsService.create({
         game_id: parseInt(form.game_id), title: form.title, content: form.content,
         category: form.category || undefined,
         build: form.isBuild && form.champion ? { champion: form.champion, role: form.role, items: {}, runes: {} } : undefined,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const id = res?.tip?.id ?? (res as any)?.id ?? Date.now();
-      saveToLocalStorage(id);
       router.push('/tips');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al publicar');

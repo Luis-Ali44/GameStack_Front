@@ -4,18 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import { Trophy, Calendar, Users, Globe, ClipboardList } from 'lucide-react';
-
-interface MyTournament {
-  id: number;
-  name: string;
-  game_id: number;
-  type: string;
-  status: string;
-  max_participants: number;
-  start_date: string;
-  end_date?: string;
-  description?: string;
-}
+import { tournamentsService } from '@/services/tournaments.service';
+import { Tournament } from '@/types/tournament.types';
 
 const TYPE_LABEL: Record<string, string> = {
   single: 'Eliminación simple',
@@ -23,21 +13,24 @@ const TYPE_LABEL: Record<string, string> = {
   round_robin: 'Round Robin',
 };
 
-const mockTournaments = [
-  { id: 'm1', name: 'Copa Latinoamérica 2026', game: 'League of Legends', status: 'registration', participants: '124/256', prize: '$50,000 USD', start: '15 May, 2026', badge: 'Próximamente', badgeBg: '#7C3AED' },
-  { id: 'm2', name: 'Torneo Battle Royale',    game: 'Valorant',           status: 'active',       participants: '89/100',  prize: '$25,000 USD', start: 'En vivo ahora', badge: 'En vivo',     badgeBg: '#16A34A' },
-  { id: 'm3', name: 'Championship Series',     game: 'Counter-Strike 2',   status: 'registration', participants: '64/128',  prize: '$75,000 USD', start: '22 May, 2026', badge: 'Próximamente', badgeBg: '#7C3AED' },
-  { id: 'm4', name: 'Arena Masters',           game: 'Hearthstone',        status: 'finished',     participants: '200/200', prize: '$10,000 USD', start: '10 Abr, 2026', badge: 'Finalizado',  badgeBg: '#374151' },
-];
-
 export default function TorneosPage() {
-  const [myTournaments, setMyTournaments] = useState<MyTournament[]>([]);
+  const [myTournaments, setMyTournaments] = useState<Tournament[]>([]);
+  const [communityTournaments, setCommunityTournaments] = useState<Tournament[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMy, setLoadingMy] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('gamecenter_my_tournaments');
-    if (saved) {
-      try { setMyTournaments(JSON.parse(saved)); } catch { /* ignore */ }
-    }
+    // Cargar mis torneos desde la API
+    tournamentsService.getMy()
+      .then((res) => setMyTournaments(res.tournaments))
+      .catch(() => {})
+      .finally(() => setLoadingMy(false));
+
+    // Cargar torneos de la comunidad desde la API
+    tournamentsService.getAll()
+      .then((res) => setCommunityTournaments(res.tournaments))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const formatDate = (dateStr: string) => {
@@ -59,7 +52,9 @@ export default function TorneosPage() {
       </div>
 
       {/* ── Mis torneos creados ── */}
-      {myTournaments.length > 0 && (
+      {loadingMy ? (
+        <p style={{ color: '#8892A4', textAlign: 'center', padding: '32px' }}>Cargando mis torneos...</p>
+      ) : myTournaments.length > 0 && (
         <div style={{ marginBottom: '32px' }}>
           <p style={{ fontSize: '13px', fontWeight: '600', color: '#A78BFA', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Trophy size={13} /> Mis torneos creados ({myTournaments.length})
@@ -73,15 +68,15 @@ export default function TorneosPage() {
                     ID: {t.id}
                   </span>
                   <span style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: '#16A34A', color: '#FFFFFF', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '20px' }}>
-                    Inscripción
+                    {t.status === 'registration' ? 'Inscripción' : t.status === 'active' ? 'Activo' : 'Finalizado'}
                   </span>
                 </div>
                 <div style={{ padding: '14px' }}>
-                  <p style={{ fontSize: '11px', color: '#A78BFA', fontWeight: '600', marginBottom: '4px' }}>Game ID: {t.game_id}</p>
+                  <p style={{ fontSize: '11px', color: '#A78BFA', fontWeight: '600', marginBottom: '4px' }}>{t.game_name || `Game ID: ${t.game_id}`}</p>
                   <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#FFFFFF', marginBottom: '10px', lineHeight: 1.3 }}>{t.name}</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#8892A4', marginBottom: '10px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ClipboardList size={11} /> {TYPE_LABEL[t.type] || t.type}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} /> 0/{t.max_participants} participantes</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} /> {t.current_participants || 0}/{t.max_participants} participantes</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={11} /> {formatDate(t.start_date)}</span>
                   </div>
                   {t.description && (
@@ -96,7 +91,7 @@ export default function TorneosPage() {
         </div>
       )}
 
-      {/* ── Torneos destacados (mock) ── */}
+      {/* ── Torneos destacados (API) ── */}
       <div>
         <p style={{ fontSize: '13px', fontWeight: '600', color: '#8892A4', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Globe size={13} /> Torneos destacados
@@ -118,28 +113,40 @@ export default function TorneosPage() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          {mockTournaments.map((t) => (
-            <div key={t.id} style={{ backgroundColor: '#0F1424', border: '1px solid #1E2540', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ height: '140px', backgroundColor: '#161B2E', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Trophy size={40} color="#A78BFA" />
-                <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '11px', fontWeight: '700', color: '#FFFFFF', backgroundColor: t.badgeBg, padding: '3px 10px', borderRadius: '20px' }}>{t.badge}</span>
-              </div>
-              <div style={{ padding: '14px' }}>
-                <p style={{ fontSize: '11px', color: '#A78BFA', fontWeight: '600', marginBottom: '4px' }}>{t.game}</p>
-                <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#FFFFFF', marginBottom: '10px', lineHeight: 1.3 }}>{t.name}</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#8892A4', marginBottom: '14px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={11} /> {t.start}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} /> {t.participants} participantes</span>
-                  <span style={{ color: '#FCD34D', fontWeight: '600' }}>Premio: {t.prize}</span>
+        {loading && <p style={{ color: '#8892A4', textAlign: 'center', padding: '32px' }}>Cargando torneos...</p>}
+
+        {!loading && communityTournaments.length === 0 && (
+          <p style={{ color: '#8892A4', textAlign: 'center', padding: '32px' }}>No hay torneos disponibles aún</p>
+        )}
+
+        {!loading && communityTournaments.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+            {communityTournaments.map((t) => {
+              const badgeBg = t.status === 'active' ? '#16A34A' : t.status === 'finished' ? '#374151' : '#7C3AED';
+              const badge = t.status === 'active' ? 'En vivo' : t.status === 'finished' ? 'Finalizado' : 'Próximamente';
+              
+              return (
+                <div key={t.id} style={{ backgroundColor: '#0F1424', border: '1px solid #1E2540', borderRadius: '12px', overflow: 'hidden' }}>
+                  <div style={{ height: '140px', backgroundColor: '#161B2E', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trophy size={40} color="#A78BFA" />
+                    <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '11px', fontWeight: '700', color: '#FFFFFF', backgroundColor: badgeBg, padding: '3px 10px', borderRadius: '20px' }}>{badge}</span>
+                  </div>
+                  <div style={{ padding: '14px' }}>
+                    <p style={{ fontSize: '11px', color: '#A78BFA', fontWeight: '600', marginBottom: '4px' }}>{t.game_name || `Game ID: ${t.game_id}`}</p>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#FFFFFF', marginBottom: '10px', lineHeight: 1.3 }}>{t.name}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#8892A4', marginBottom: '14px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={11} /> {formatDate(t.start_date)}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} /> {t.current_participants || 0}/{t.max_participants} participantes</span>
+                    </div>
+                    <button style={{ width: '100%', padding: '9px 0', backgroundColor: t.status === 'finished' ? 'transparent' : '#7C3AED', border: t.status === 'finished' ? '1px solid #1E2540' : 'none', borderRadius: '8px', color: t.status === 'finished' ? '#8892A4' : '#FFFFFF', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                      {t.status === 'active' ? 'Ver en vivo' : t.status === 'finished' ? 'Ver resultados' : 'Inscribirse'}
+                    </button>
+                  </div>
                 </div>
-                <button style={{ width: '100%', padding: '9px 0', backgroundColor: t.status === 'finished' ? 'transparent' : '#7C3AED', border: t.status === 'finished' ? '1px solid #1E2540' : 'none', borderRadius: '8px', color: t.status === 'finished' ? '#8892A4' : '#FFFFFF', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-                  {t.status === 'active' ? 'Ver en vivo' : t.status === 'finished' ? 'Ver resultados' : 'Inscribirse'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </MainLayout>
   );

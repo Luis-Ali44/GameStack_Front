@@ -12,7 +12,9 @@ export interface Build {
 export interface Tip {
   id: number;
   game_id: number;
-  author_id: number;
+  author_id?: number;
+  author_name?: string;
+  game_name?: string;
   title: string;
   content: string;
   category?: string;

@@ -29,7 +29,7 @@ export default function NuevoTorneoPage() {
     if (!form.game_id || !form.name || !form.start_date) { setError('Selecciona un juego, nombre y fecha de inicio son obligatorios'); return; }
     setLoading(true); setError('');
     try {
-      const res = await tournamentsService.create({
+      await tournamentsService.create({
         game_id: parseInt(form.game_id), name: form.name,
         description: form.description || undefined, type: form.type,
         max_participants: parseInt(form.max_participants),
@@ -37,16 +37,6 @@ export default function NuevoTorneoPage() {
         start_date: new Date(form.start_date).toISOString(),
         end_date: form.end_date ? new Date(form.end_date).toISOString() : undefined,
       });
-
-      const saved = localStorage.getItem('gamecenter_my_tournaments');
-      const existing = saved ? JSON.parse(saved) : [];
-      const selectedGame = games.find((g) => g.id === parseInt(form.game_id));
-      localStorage.setItem('gamecenter_my_tournaments', JSON.stringify([...existing, {
-        id: res.tournament.id, name: form.name, game_id: parseInt(form.game_id),
-        game_name: selectedGame?.name || '', type: form.type, status: 'registration',
-        max_participants: parseInt(form.max_participants), start_date: form.start_date,
-        end_date: form.end_date || undefined, description: form.description || undefined,
-      }]));
 
       router.push('/torneos');
     } catch (err: unknown) {

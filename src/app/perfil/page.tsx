@@ -4,16 +4,7 @@ import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { usersService } from '@/services/users.service';
 import { User, UserStats } from '@/types/user.types';
-import { Zap, Trophy, Target, Calendar, Gamepad2, Flame, Medal, Star, BarChart2, Check } from 'lucide-react';
-
-const achievements = [
-  { icon: Trophy,   name: 'Primera Victoria',   desc: 'Gana tu primera partida',        unlocked: true  },
-  { icon: Flame,    name: 'Racha de 5',         desc: 'Gana 5 partidas consecutivas',   unlocked: true  },
-  { icon: Target,   name: 'Campeón de Torneo',  desc: 'Gana un torneo oficial',          unlocked: false },
-  { icon: Medal,    name: 'Maestro de Tips',    desc: 'Publica 10 tips',                 unlocked: false },
-  { icon: Star,     name: 'Top 10',             desc: 'Alcanza el top 10 del ranking',   unlocked: false },
-  { icon: BarChart2,name: 'Estratega',          desc: 'Publica 5 estrategias',           unlocked: false },
-];
+import { Zap, Trophy, Target, Calendar, Gamepad2 } from 'lucide-react';
 
 export default function PerfilPage() {
   const [profile, setProfile] = useState<User | null>(null);
@@ -107,22 +98,6 @@ export default function PerfilPage() {
               <span style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>{s.icon}</span>
               <p style={{ fontSize: '22px', fontWeight: '800', color: s.color, margin: '0 0 4px' }}>{s.value}</p>
               <p style={{ fontSize: '11px', color: '#8892A4', margin: 0 }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ backgroundColor: '#0F1424', border: '1px solid #1E2540', borderRadius: '12px', padding: '20px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#FFFFFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Medal size={16} color="#FCD34D" /> Logros</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {achievements.map((a, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', backgroundColor: a.unlocked ? '#7C3AED22' : '#161B2E', borderRadius: '10px', border: `1px solid ${a.unlocked ? '#7C3AED44' : '#1E2540'}`, opacity: a.unlocked ? 1 : 0.6 }}>
-              <span style={{ opacity: a.unlocked ? 1 : 0.4 }}><a.icon size={24} color={a.unlocked ? '#A78BFA' : '#6B7280'} /></span>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '13px', fontWeight: '600', color: '#FFFFFF', margin: 0 }}>{a.name}</p>
-                <p style={{ fontSize: '11px', color: '#8892A4', margin: '2px 0 0' }}>{a.desc}</p>
-              </div>
-              {a.unlocked && <span style={{ fontSize: '11px', color: '#4ADE80', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> Desbloqueado</span>}
             </div>
           ))}
         </div>
