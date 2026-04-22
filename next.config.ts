@@ -1,12 +1,15 @@
 import type { NextConfig } from 'next';
 
+const apiUrl = process.env.API_URL;
+console.log('[next.config] API_URL:', apiUrl);
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://prueba-kohl-phi-76.vercel.app/api/:path*',
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },
