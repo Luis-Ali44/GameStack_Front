@@ -20,7 +20,7 @@ export default function NuevoTorneoPage() {
     if (!form.game_id || !form.name || !form.start_date) { setError('Juego, nombre y fecha de inicio son obligatorios'); return; }
     setLoading(true); setError('');
     try {
-      await tournamentsService.create({
+      const res = await tournamentsService.create({
         game_id: parseInt(form.game_id), name: form.name,
         description: form.description || undefined, type: form.type,
         max_participants: parseInt(form.max_participants),
@@ -28,6 +28,23 @@ export default function NuevoTorneoPage() {
         start_date: new Date(form.start_date).toISOString(),
         end_date: form.end_date ? new Date(form.end_date).toISOString() : undefined,
       });
+
+      // Guardar en localStorage
+      const saved = localStorage.getItem('gamecenter_my_tournaments');
+      const existing = saved ? JSON.parse(saved) : [];
+      const newTournament = {
+        id: res.tournament.id,
+        name: form.name,
+        game_id: parseInt(form.game_id),
+        type: form.type,
+        status: 'registration',
+        max_participants: parseInt(form.max_participants),
+        start_date: form.start_date,
+        end_date: form.end_date || undefined,
+        description: form.description || undefined,
+      };
+      localStorage.setItem('gamecenter_my_tournaments', JSON.stringify([...existing, newTournament]));
+
       router.push('/torneos');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al crear torneo');
@@ -43,7 +60,7 @@ export default function NuevoTorneoPage() {
         </div>
         <div style={{ backgroundColor: '#0F1424', border: '1px solid #1E2540', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div><label style={lbl}>ID del juego *</label><input value={form.game_id} onChange={(e) => set('game_id', e.target.value)} type="number" placeholder="Ej: 1" style={inp} /></div>
+            <div><label style={lbl}>ID del juego * <span style={{ fontSize: '11px', color: '#8892A4', fontWeight: '400' }}>(ver en /juegos)</span></label><input value={form.game_id} onChange={(e) => set('game_id', e.target.value)} type="number" placeholder="Ej: 1" style={inp} /></div>
             <div><label style={lbl}>Nombre del torneo *</label><input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Ej: Copa LatAm 2026" style={inp} /></div>
           </div>
           <div><label style={lbl}>Descripción</label><textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={2} placeholder="Describe el torneo..." style={{ ...inp, resize: 'vertical' }} /></div>
@@ -60,7 +77,7 @@ export default function NuevoTorneoPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div><label style={lbl}>Fecha inicio *</label><input value={form.start_date} onChange={(e) => set('start_date', e.target.value)} type="datetime-local" style={inp} /></div>
-            <div><label style={lbl}>Fecha fin</label><input value={form.end_date} onChange={(e) => set('end_date', e.target.value)} type="datetime-local" style={inp} /></div>
+            <div><label style={lbl}>Fecha fin <span style={{ fontSize: '11px', color: '#8892A4', fontWeight: '400' }}>(debe ser posterior al inicio)</span></label><input value={form.end_date} onChange={(e) => set('end_date', e.target.value)} type="datetime-local" style={inp} /></div>
           </div>
           <div><label style={lbl}>Reglas</label><textarea value={form.rules} onChange={(e) => set('rules', e.target.value)} rows={3} placeholder="Escribe las reglas del torneo..." style={{ ...inp, resize: 'vertical' }} /></div>
           {error && <p style={{ fontSize: '12px', color: '#F87171' }}>{error}</p>}
