@@ -19,11 +19,26 @@ export default function NuevoTipPage() {
     if (!form.game_id || !form.title || !form.content) { setError('Juego, título y contenido son obligatorios'); return; }
     setLoading(true); setError('');
     try {
-      await tipsService.create({
+      const res = await tipsService.create({
         game_id: parseInt(form.game_id), title: form.title, content: form.content,
         category: form.category || undefined,
         build: form.isBuild && form.champion ? { champion: form.champion, role: form.role, items: {}, runes: {} } : undefined,
       });
+
+      // Guardar en localStorage
+      const saved = localStorage.getItem('gamecenter_my_tips');
+      const existing = saved ? JSON.parse(saved) : [];
+      const newTip = {
+        id: res.tip.id,
+        game_id: parseInt(form.game_id),
+        title: form.title,
+        content: form.content,
+        category: form.category || undefined,
+        likes_count: 0,
+        created_at: new Date().toISOString(),
+      };
+      localStorage.setItem('gamecenter_my_tips', JSON.stringify([...existing, newTip]));
+
       router.push('/tips');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al publicar');
@@ -39,7 +54,10 @@ export default function NuevoTipPage() {
         </div>
         <div style={{ backgroundColor: '#0F1424', border: '1px solid #1E2540', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div><label style={lbl}>ID del juego *</label><input value={form.game_id} onChange={(e) => set('game_id', e.target.value)} type="number" placeholder="Ej: 1" style={inp} /></div>
+            <div>
+              <label style={lbl}>ID del juego * <span style={{ fontSize: '11px', color: '#8892A4', fontWeight: '400' }}>(ver en /juegos)</span></label>
+              <input value={form.game_id} onChange={(e) => set('game_id', e.target.value)} type="number" placeholder="Ej: 1" style={inp} />
+            </div>
             <div>
               <label style={lbl}>Categoría</label>
               <select value={form.category} onChange={(e) => set('category', e.target.value)} style={inp}>
@@ -53,10 +71,12 @@ export default function NuevoTipPage() {
           </div>
           <div><label style={lbl}>Título *</label><input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Ej: Build Jinx ADC Crit" style={inp} /></div>
           <div><label style={lbl}>Contenido *</label><textarea value={form.content} onChange={(e) => set('content', e.target.value)} rows={6} placeholder="Escribe tu tip, estrategia o guía en detalle..." style={{ ...inp, resize: 'vertical' }} /></div>
+
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
             <input type="checkbox" checked={form.isBuild} onChange={(e) => set('isBuild', e.target.checked)} />
             <span style={{ fontSize: '13px', color: '#E2E8F0', fontWeight: '600' }}>¿Incluir build de campeón? (solo LoL)</span>
           </label>
+
           {form.isBuild && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '16px', backgroundColor: '#161B2E', borderRadius: '8px', border: '1px solid #1E2540' }}>
               <div><label style={lbl}>Campeón * (en inglés)</label><input value={form.champion} onChange={(e) => set('champion', e.target.value)} placeholder="Ej: Jinx" style={inp} /></div>
@@ -64,6 +84,7 @@ export default function NuevoTipPage() {
               <p style={{ gridColumn: '1/-1', fontSize: '11px', color: '#FCD34D' }}>⚠️ El nombre debe ser exactamente como aparece en el juego (ej: "Jinx", "LeBlanc")</p>
             </div>
           )}
+
           {error && <p style={{ fontSize: '12px', color: '#F87171' }}>{error}</p>}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
             <button onClick={() => router.back()} style={{ padding: '10px 20px', backgroundColor: 'transparent', border: '1px solid #1E2540', borderRadius: '8px', color: '#8892A4', fontSize: '13px', cursor: 'pointer' }}>Cancelar</button>
