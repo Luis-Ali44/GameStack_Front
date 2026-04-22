@@ -2,17 +2,21 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  async headers() {
+  async rewrites() {
     return [
       {
         source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
-        ],
+        destination: 'https://prueba-kohl-phi-76.vercel.app/api/:path*',
       },
     ];
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'media.rawg.io',
+      },
+    ],
   },
 };
 
